@@ -63,6 +63,7 @@ The interfaces are set to 100 Mbit/s like FastEthernet, so every OSPF cost is 1 
 | `status/collect.py` | Reads the live state of the lab for the status page |
 | `web/` | The status page and its Nginx site |
 | `publish.sh` | Installs the status page on the server |
+| `harden-web.sh` | Security settings for the status page, with a check from outside |
 | `remote-access.sh` | WireGuard remote access into the Milan router |
 
 ## Run it
@@ -120,3 +121,18 @@ Private keys never leave their machine. Each PC makes its own key pair, the serv
 ## Status page
 
 A small Python service on the server runs show commands, pings and traceroutes inside the lab every 15 seconds and writes the results to `status.json`. Nginx serves a plain static page that reads that file, so the page can show the network but never change it. There is no Grafana or database behind it, so it adds almost no memory on the server.
+
+### Security
+
+The page is read only and serves nothing but static files, and it is locked down in layers (`web/security.conf`, applied by `harden-web.sh`):
+
+| Layer | Setting |
+|---|---|
+| Transport | HTTPS only (Let's Encrypt, HTTP redirects), HSTS for one year |
+| What the browser may run | Content Security Policy with nothing allowed by default: own script and styles only, no inline code, no frames, Trusted Types enforced |
+| Other browser protections | nosniff, no referrer, no framing, camera, microphone and location disabled, cross origin isolation of the window and its files |
+| Methods | GET and HEAD only, anything else gets 405 |
+| Abuse | 5 requests a second per visitor (bursts of 20), 20 connections per visitor, then 429 |
+| Leaks | hidden files such as `.git` are refused, the Nginx version is not shown |
+
+`./harden-web.sh --check` tests all of it from outside: headers present, POST refused, `.git` refused, redirect and rate limit working.

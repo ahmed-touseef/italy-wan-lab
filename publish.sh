@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Publishes the live status page at https://wan.touseefahmed.com
-# Installs the collector service, the page files, an Nginx site and a Let's Encrypt
-# certificate. Other sites on this server are not touched. Run: ./publish.sh
+# Installs the collector service, the page files, an Nginx site with its security
+# settings (harden-web.sh) and a Let's Encrypt certificate. Other sites keep their
+# settings; only the Nginx version is hidden server wide. Run: ./publish.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 DOMAIN=wan.touseefahmed.com
@@ -39,17 +40,14 @@ echo "== 3. Page files =="
 sudo install -m 644 web/index.html web/style.css web/app.js "$WEB/"
 echo "  copied to $WEB"
 
-echo "== 4. Nginx site (other sites untouched) =="
-[ -f "$SITE" ] || sudo install -m 644 web/nginx.conf "$SITE"
+echo "== 4. Nginx site and its security settings =="
+new_site=0
+[ -f "$SITE" ] || { sudo install -m 644 web/nginx.conf "$SITE"; new_site=1; }
 sudo ln -sf "$SITE" "/etc/nginx/sites-enabled/$DOMAIN"
-if ! sudo nginx -t 2>/dev/null; then
-  sudo rm -f "/etc/nginx/sites-enabled/$DOMAIN"
-  echo "  Nginx rejected the config, so the new site was removed again. Other sites are unchanged:"
-  sudo nginx -t || true
+if ! ./harden-web.sh --apply; then
+  if [ "$new_site" = 1 ]; then sudo rm -f "/etc/nginx/sites-enabled/$DOMAIN" "$SITE"; fi
   exit 1
 fi
-sudo systemctl reload nginx
-echo "  site enabled"
 
 echo "== 5. HTTPS certificate =="
 sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --redirect --keep-until-expiring
@@ -57,4 +55,5 @@ sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --redirect --kee
 echo "== 6. Check from outside =="
 curl -sS -o /dev/null -w "  https://$DOMAIN/ -> HTTP %{http_code}\n" "https://$DOMAIN/"
 curl -sS "https://$DOMAIN/status.json" | python3 -c "import json, sys, time; d = json.load(sys.stdin); print('  status.json:', d['devices']['running'], 'of 54 devices running, written', int(time.time() - d['generated']), 's ago')"
+./harden-web.sh --check
 echo "Done: open https://$DOMAIN"
