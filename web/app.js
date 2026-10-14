@@ -188,7 +188,7 @@ function drawRemote() {
       h("td", { text: p.name }),
       h("td", {}, h("span", { class: "ip", text: p.address })),
       h("td", {}, h("span", { class: p.connected ? "state-ok" : "state-off", text: p.connected ? "connected" : "not connected" })),
-      h("td", { text: fmtAge(p.handshake) }),
+      h("td", { text: fmtAge(p.last_seen || p.handshake) }),
       h("td", { text: `${fmtBytes(p.rx)} from PC, ${fmtBytes(p.tx)} to PC` }),
       h("td", {}, h("span", { class: p.ping ? "state-ok" : "state-off", text: p.ping ? "replies" : "no reply" })))));
   }

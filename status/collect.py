@@ -21,6 +21,8 @@ OUT = Path(os.environ.get("ITALY_WAN_OUT", "/var/www/italy-wan/status.json"))
 STATE = Path(os.environ.get("ITALY_WAN_STATE", "/var/lib/italy-wan/state.json"))
 PEERS = Path(os.environ.get("ITALY_WAN_PEERS", "/var/lib/italy-wan/peers.json"))
 CONNECTED_S = 180          # a WireGuard peer counts as connected if it shook hands this recently
+SILENT_S = 60              # ...and sent something lately: PCs send a keepalive every 25 s
+LAST_RX = {}               # name: (bytes received, when that number last grew)
 LAB = "clab-italy"
 ORIGIN = "mil1pc"            # every ping and traceroute starts at Milan site 1
 MAX_EVENTS = 40
@@ -221,7 +223,15 @@ def collect():
 
     now = time.time()
     for p in remote["peers"]:
-        p["connected"] = bool(p["handshake"]) and now - p["handshake"] < CONNECTED_S
+        # WireGuard never says "disconnected": a PC that goes away just falls silent.
+        recent_hs = bool(p["handshake"]) and now - p["handshake"] < CONNECTED_S
+        seen = LAST_RX.get(p["name"])
+        if seen is None:
+            LAST_RX[p["name"]] = (p["rx"], now if recent_hs else (p["handshake"] or 0))
+        elif p["rx"] != seen[0]:
+            LAST_RX[p["name"]] = (p["rx"], now)
+        p["last_seen"] = LAST_RX[p["name"]][1] or None
+        p["connected"] = recent_hs and now - LAST_RX[p["name"]][1] < SILENT_S
         p["ping"] = reach.get(p["address"], False)
     remote["known_by"] = [name for name, _, _ in gen.CITIES if routers[name]["remote_route"]]
 
@@ -296,7 +306,7 @@ def update_events(status):
             if connected and not was:
                 add(f"{name} connected over WireGuard to the Milan router")
             elif was and not connected:
-                add(f"{name} disconnected (no WireGuard handshake for 3 minutes)")
+                add(f"{name} disconnected (nothing heard over WireGuard for {SILENT_S} seconds)")
 
     events = events[-MAX_EVENTS:]
     cur["events"] = events

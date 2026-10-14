@@ -62,7 +62,8 @@ up() {
   sudo ip link add italy-wg0 type wireguard     # born on the server: listens on its public address
   sudo ip link set italy-wg0 netns "$PID"       # handed to the Milan router
   in_milan ip link set italy-wg0 name wg0
-  in_milan wg set wg0 private-key "$KEY" listen-port "$PORT"
+  sudo install -d -m 700 /etc/wireguard && sudo install -m 600 "$KEY" /etc/wireguard/italy-wan-milan.key
+  in_milan wg set wg0 private-key /etc/wireguard/italy-wan-milan.key listen-port "$PORT"
   while read -r name addr pub; do
     if [ -n "${pub:-}" ]; then in_milan wg set wg0 peer "$pub" allowed-ips "$addr/32"; fi
   done < "$PEERS"
