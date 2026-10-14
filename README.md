@@ -2,6 +2,8 @@
 
 A six city company network running OSPF. I first built it by hand in Cisco Packet Tracer, then rebuilt it as code with containerlab and FRRouting on a cloud server, keeping the same addresses, ports and OSPF design.
 
+[![Live status page: the six city ring, the path from Milan and Milan's routing table](docs/status-page.png)](https://wan.touseefahmed.com)
+
 **Live status page: [wan.touseefahmed.com](https://wan.touseefahmed.com)**. The map, paths, routing table and reachability of every site, refreshed every 15 seconds.
 
 ```
