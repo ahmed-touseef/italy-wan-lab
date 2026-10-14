@@ -2,6 +2,8 @@
 
 A six city company network running OSPF. I first built it by hand in Cisco Packet Tracer, then rebuilt it as code with containerlab and FRRouting on a cloud server, keeping the same addresses, ports and OSPF design.
 
+**Live status page: [wan.touseefahmed.com](https://wan.touseefahmed.com)**. The map, paths, routing table and reachability of every site, refreshed every 15 seconds.
+
 ```
    Milan (1) ──── Turin (2) ──── Genoa (3)
       │                              │
@@ -58,6 +60,10 @@ The interfaces are set to 100 Mbit/s like FastEthernet, so every OSPF cost is 1 
 | `host/` | The small image used for switches and PCs |
 | `deploy.sh` | Builds and starts the lab |
 | `verify.sh` | Checks devices, OSPF, routes, pings and paths |
+| `status/collect.py` | Reads the live state of the lab for the status page |
+| `web/` | The status page and its Nginx site |
+| `publish.sh` | Installs the status page on the server |
+| `remote-access.sh` | WireGuard remote access into the Milan router |
 
 ## Run it
 
@@ -98,6 +104,19 @@ sudo docker exec clab-italy-milan vtysh -c "show ip route 10.4.1.0/24"
 sudo docker exec clab-italy-turin tcpdump -ni eth5 icmp or arp
 ```
 
-## Roadmap
+## Remote access
 
-* Step 2: remote access with WireGuard. A laptop joins as 10.9.0.0/24 behind Milan, and OSPF announces it to every city.
+A PC joins the network over WireGuard. The tunnel ends on the Milan router as `wg0` (10.9.0.1/24). Milan announces 10.9.0.0/24 in OSPF as a passive interface (no OSPF towards PCs), so every city can reach remote PCs.
+
+The interface is created in the server's own network namespace, so its UDP socket listens on the server's public address, and is then moved into the Milan router. Encrypted packets use the server's internet connection; decrypted packets appear inside Milan. No port forwarding or NAT is needed.
+
+```bash
+./remote-access.sh add touseef-pc PUBLIC_KEY   # allow a PC and print the lines for its tunnel
+./remote-access.sh show                        # handshakes and traffic
+```
+
+Private keys never leave their machine. Each PC makes its own key pair, the server's key stays in `secrets/` (ignored by Git, and a pre-commit hook refuses keys), and only public keys are exchanged. The PC's tunnel carries only lab addresses (10.0.0.0/13 and 10.9.0.0/24), so its normal internet traffic is untouched.
+
+## Status page
+
+A small Python service on the server runs show commands, pings and traceroutes inside the lab every 15 seconds and writes the results to `status.json`. Nginx serves a plain static page that reads that file, so the page can show the network but never change it. There is no Grafana or database behind it, so it adds almost no memory on the server.

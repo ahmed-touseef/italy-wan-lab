@@ -2,3 +2,4 @@ clab-*/
 *.bak
 secrets/
 __pycache__/
+status.json

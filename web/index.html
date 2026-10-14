@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Italy WAN lab</title>
+<meta name="description" content="Live status of a six city OSPF network built with containerlab and FRRouting.">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='5' fill='%2318222c'/%3E%3C/svg%3E">
+</head>
+<body>
+<header class="top">
+  <div class="intro">
+    <h1>Italy WAN lab</h1>
+    <p>Six cities, six routers, 24 office sites, joined in a ring and routed with OSPF. This page shows what the network sees right now.</p>
+  </div>
+  <div class="overall" id="overall" aria-live="polite">
+    <p class="overall-main"><span class="mark" id="overall-mark"></span><span id="overall-text">Loading the latest status</span></p>
+    <p class="overall-sub" id="overall-sub"></p>
+  </div>
+</header>
+
+<main>
+  <section class="map-panel" aria-labelledby="map-h">
+    <div class="panel-head">
+      <h2 id="map-h">Network map</h2>
+      <ul class="legend">
+        <li><span class="key key-up"></span>Cable up</li>
+        <li><span class="key key-down"></span>Cable down</li>
+        <li><span class="key key-path"></span>Selected path</li>
+        <li><span class="key key-tunnel"></span>WireGuard tunnel</li>
+      </ul>
+    </div>
+    <svg id="map" viewBox="0 0 540 540" role="img" aria-labelledby="map-title">
+      <title id="map-title">Map of the six routers and the ring cables between them</title>
+    </svg>
+  </section>
+
+  <div class="side">
+    <section aria-labelledby="path-h">
+      <h2 id="path-h">Path from Milan</h2>
+      <div class="picker" id="picker" role="group" aria-label="Destination city"></div>
+      <p class="from" id="path-from"></p>
+      <ol class="hops" id="hops"></ol>
+      <p class="note" id="path-note"></p>
+    </section>
+
+    <section aria-labelledby="routes-h">
+      <h2 id="routes-h">Milan's routing table</h2>
+      <p class="hint">How Milan reaches every other city. Cost is the OSPF metric: one per hop.</p>
+      <div class="scroll"><table class="data" id="routes">
+        <thead><tr><th scope="col">City</th><th scope="col">Next router</th><th scope="col" class="num">Cost</th><th scope="col" class="num">Sites</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+  </div>
+
+  <section class="wide" aria-labelledby="remote-h">
+    <h2 id="remote-h">Remote access over WireGuard</h2>
+    <p class="hint">Remote PCs connect through an encrypted WireGuard tunnel that ends on the Milan router (<span class="ip">wg0</span>, <span class="ip">10.9.0.1</span>). Milan announces <span class="ip">10.9.0.0/24</span> in OSPF, so every city can reach them.</p>
+    <div class="scroll"><table class="data" id="remote">
+      <thead><tr><th scope="col">Device</th><th scope="col">Address</th><th scope="col">Tunnel</th><th scope="col">Last handshake</th><th scope="col">Traffic</th><th scope="col">Ping from Milan site 1</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="note" id="remote-note"></p>
+  </section>
+
+  <section class="wide" aria-labelledby="links-h">
+    <h2 id="links-h">Ring cables</h2>
+    <div class="scroll"><table class="data" id="links">
+      <thead><tr><th scope="col">Between</th><th scope="col">Subnet</th><th scope="col">Ports</th><th scope="col">Cable</th><th scope="col">OSPF</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <section class="wide" aria-labelledby="sites-h">
+    <h2 id="sites-h">Sites reachable from Milan</h2>
+    <p class="hint">Every 15 seconds the PC in Milan site 1 pings the PC (.2) and the switch (.7) of all 24 sites.</p>
+    <div class="scroll"><table class="data sites" id="sites">
+      <thead><tr><th scope="col">City</th><th scope="col">Site 1</th><th scope="col">Site 2</th><th scope="col">Site 3</th><th scope="col">Site 4</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <section class="half" aria-labelledby="events-h">
+    <h2 id="events-h">Recent changes</h2>
+    <ul class="events" id="events"></ul>
+  </section>
+
+  <section class="half about" aria-labelledby="about-h">
+    <h2 id="about-h">How this page works</h2>
+    <p>The network runs on a cloud server: 54 containers built from one Python file. Every 15 seconds a script runs show commands, pings and traceroutes inside the lab and saves the results. This page only reads them, so nothing here can change the network.</p>
+    <p>Remote PCs join over WireGuard and appear on the map, tunnelled into Milan. Their home addresses and keys never reach this page.</p>
+    <p>To see failover, the Milan to Naples cable can be cut. Within seconds OSPF sends Milan's traffic for Rome the long way round through Turin, and this page shows the new path on its next refresh.</p>
+    <p>Built by Touseef Ahmed. Source code and configs: <a href="https://github.com/ahmed-touseef/italy-wan-lab">github.com/ahmed-touseef/italy-wan-lab</a></p>
+  </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

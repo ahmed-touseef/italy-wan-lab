@@ -1,0 +1,200 @@
+/* Italy WAN lab status page */
+:root {
+  --paper: #eef1f2;
+  --panel: #ffffff;
+  --ink: #18222c;
+  --muted: #5c6873;
+  --rule: #d3d9de;
+  --grid: #e3e7ea;
+  --cable: #8693a0;
+  --ok: #2b7a4a;
+  --bad: #c2362b;
+  --warn: #9a6400;
+  --path: #1d4fa0;
+  --path-soft: #e4ebf6;
+  --display: "Bahnschrift", "DIN Alternate", "DIN Next", "Barlow", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  --text: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --code: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 15px/1.5 var(--text);
+}
+
+a { color: var(--path); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--path); outline-offset: 2px; }
+
+h1, h2 { font-family: var(--display); font-weight: 600; margin: 0; }
+h1 { font-size: 34px; line-height: 1.1; letter-spacing: -0.01em; }
+h2 { font-size: 18px; line-height: 1.3; margin-bottom: 10px; }
+
+code, .ip { font-family: var(--code); font-size: 13px; }
+
+/* Header */
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 40px;
+  justify-content: space-between;
+  align-items: flex-end;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 36px 20px 24px;
+}
+.intro p { margin: 8px 0 0; max-width: 60ch; color: var(--muted); }
+.overall { min-width: 260px; }
+.overall p { margin: 0; }
+.overall-main { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 20px; font-weight: 600; }
+.overall-sub { margin-top: 4px !important; color: var(--muted); font-size: 14px; padding-left: 24px; }
+.mark { width: 14px; height: 14px; border-radius: 2px; background: var(--cable); flex: none; }
+.mark.ok { background: var(--ok); }
+.mark.bad { background: var(--bad); }
+.mark.warn { background: var(--warn); }
+
+/* Layout */
+main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 16px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 20px 40px;
+}
+main > section, .side > section {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 18px 20px 20px;
+}
+.side { display: grid; gap: 16px; align-content: start; }
+.wide { grid-column: 1 / -1; }
+
+@media (max-width: 900px) {
+  main { grid-template-columns: minmax(0, 1fr); }
+  .top { padding-top: 24px; }
+  h1 { font-size: 28px; }
+}
+@media (max-width: 520px) {
+  main, .top { padding-left: 12px; padding-right: 12px; }
+  main > section, .side > section { padding: 14px; }
+}
+
+.hint, .note, .from { color: var(--muted); font-size: 14px; margin: -4px 0 12px; }
+.note:empty, .from:empty { display: none; }
+.note { margin: 12px 0 0; }
+.from { margin: 12px 0 6px; }
+
+/* Map */
+.panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; }
+.legend { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 10px; padding: 0; font-size: 13px; color: var(--muted); }
+.legend li { display: flex; align-items: center; gap: 6px; }
+.key { display: inline-block; width: 22px; height: 0; border-top: 3px solid var(--cable); }
+.key-down { border-top: 3px dashed var(--bad); }
+.key-path { border-top-width: 4px; border-top-color: var(--path); }
+.key-tunnel { border-top: 3px dashed var(--path); }
+
+#map { display: block; width: 100%; height: auto; max-height: 640px; }
+#map .grid { stroke: var(--grid); stroke-width: 1; }
+#map .geo { fill: #9aa5af; font: 11px var(--code); }
+#map .cable { fill: none; stroke: var(--cable); stroke-width: 3; stroke-linecap: round; }
+#map .cable.down { stroke: var(--bad); stroke-dasharray: 7 6; }
+#map .cable.off { stroke: var(--rule); stroke-dasharray: 2 6; }
+#map .route { fill: none; stroke: var(--path); stroke-width: 6; stroke-linecap: round; opacity: 0.9; }
+#map .subnet { fill: var(--muted); font: 10px var(--code); paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
+#map .node { cursor: pointer; }
+#map .node .dot { fill: var(--ink); }
+#map .node .halo { fill: none; stroke-width: 3; stroke: transparent; }
+#map .node.warn .halo { stroke: var(--warn); }
+#map .node.bad .halo { stroke: var(--bad); }
+#map .node.picked .dot { fill: var(--path); }
+#map .node.origin .dot { fill: var(--ink); }
+#map .city { font: 600 15px var(--display); fill: var(--ink); paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
+#map .rid { font: 11px var(--code); fill: var(--muted); paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
+#map .node:focus { outline: none; }
+#map .tunnel { fill: none; stroke: var(--path); stroke-width: 2.5; stroke-dasharray: 6 5; }
+#map .tunnel.idle { stroke: var(--cable); stroke-dasharray: 2 5; }
+#map .pc rect { fill: var(--panel); stroke: var(--path); stroke-width: 2.5; }
+#map .pc.idle rect { stroke: var(--cable); }
+#map .pc .city { font-size: 14px; }
+#map .node:focus-visible .halo { stroke: var(--path); }
+
+/* Path picker */
+.picker { display: flex; flex-wrap: wrap; gap: 6px; }
+.picker button {
+  font: 600 14px var(--display);
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.picker button:hover { background: var(--paper); }
+.picker button[aria-pressed="true"] { background: var(--path); color: #fff; }
+
+.hops { margin: 0; padding: 0; list-style: none; counter-reset: hop; }
+.hops li {
+  counter-increment: hop;
+  display: grid;
+  grid-template-columns: 28px 112px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-top: 1px solid var(--grid);
+}
+.hops li:first-child { border-top: 0; }
+.hops li::before { content: counter(hop); font: 600 13px var(--display); color: var(--muted); text-align: right; }
+.hops .who { color: var(--ink); }
+.hops li.lost .who, .hops li.lost .ip { color: var(--bad); }
+
+/* Tables */
+.scroll { overflow-x: auto; }
+table.data { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.data th { text-align: left; font-weight: 600; color: var(--muted); font-size: 13px; padding: 0 12px 8px 0; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.data td { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+table.data tr:last-child td { border-bottom: 0; }
+table.data .num { text-align: right; font-variant-numeric: tabular-nums; }
+.state-ok { color: var(--ok); font-weight: 600; }
+.state-bad { color: var(--bad); font-weight: 600; }
+.state-warn { color: var(--warn); font-weight: 600; }
+.state-off { color: var(--muted); }
+
+table.sites td { padding-right: 18px; }
+.reach { display: inline-flex; gap: 12px; }
+.reach span { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--muted); }
+.reach span::before { content: ""; width: 9px; height: 9px; border-radius: 1px; background: var(--ok); }
+.reach span.fail { color: var(--bad); font-weight: 600; }
+.reach span.fail::before { background: var(--bad); }
+.reach span.off::before { background: var(--rule); }
+
+/* Events and about */
+.half { grid-column: span 1; }
+@media (max-width: 900px) { .half { grid-column: 1 / -1; } }
+.events { list-style: none; margin: 0; padding: 0; max-height: 300px; overflow-y: auto; }
+.events li { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; padding: 7px 0; border-top: 1px solid var(--grid); font-size: 14px; }
+.events li:first-child { border-top: 0; }
+.events time { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+.events .empty { display: block; color: var(--muted); }
+.about p { margin: 0 0 10px; max-width: 64ch; }
+.about p:last-child { margin-bottom: 0; }
+
+.problem { color: var(--warn); }
+
+@media (max-width: 560px) {
+  #map .city { font-size: 22px; }
+  #map .rid { font-size: 16px; }
+  #map .geo { display: none; }
+  #map .subnet { display: none; }
+  #map .pc .city { font-size: 20px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #map .route { transition: opacity 0.2s; }
+}

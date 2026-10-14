@@ -19,3 +19,4 @@ python3 gen.py
 echo "Building the switch and PC image..."
 sudo docker build -q -t italy-host:1 host/
 sudo containerlab deploy -t italy.clab.yml --reconfigure
+if [ -s secrets/peers ]; then ./remote-access.sh up; fi   # WireGuard into Milan, once set up

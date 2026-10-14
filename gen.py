@@ -27,6 +27,9 @@ RING = [("milan", "eth5", "turin", "eth5"), ("turin", "eth6", "genoa", "eth5"),
         ("genoa", "eth6", "florence", "eth5"), ("florence", "eth6", "rome", "eth5"),
         ("rome", "eth6", "naples", "eth5"), ("naples", "eth6", "milan", "eth6")]
 
+# Remote access: WireGuard tunnel ending on this router (set up by remote-access.sh)
+REMOTE = {"router": "milan", "port": "wg0", "room": "10.9.0", "listen": 51821}
+
 NUM = {name: n for name, n, _ in CITIES}
 
 
@@ -67,10 +70,17 @@ def router_conf(name, n):
                 f" ip address {addr}/30",
                 " bandwidth 100000",
                 "!"]
+    if name == REMOTE["router"]:
+        out += [f"interface {REMOTE['port']}",
+                " description WireGuard remote access (created by remote-access.sh)",
+                f" ip address {REMOTE['room']}.1/24",
+                " ip ospf passive",
+                "!"]
     out += ["router ospf",
             f" ospf router-id {n}.{n}.{n}.{n}",
             f" network 10.{n}.0.0/16 area 0",
             " network 10.0.0.0/16 area 0",
+            *([f" network {REMOTE['room']}.0/24 area 0"] if name == REMOTE["router"] else []),
             "!",
             "line vty",
             "!"]
