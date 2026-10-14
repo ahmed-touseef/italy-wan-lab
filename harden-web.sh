@@ -74,7 +74,7 @@ check() {
   echo "== Check from outside =="
   hdr=$(curl -sS -D - -o /dev/null "$url/" | tr -d '\r')
   for h in Strict-Transport-Security Content-Security-Policy X-Content-Type-Options X-Frame-Options \
-           Referrer-Policy Permissions-Policy Cross-Origin-Opener-Policy Cross-Origin-Resource-Policy; do
+           Referrer-Policy Permissions-Policy Cross-Origin-Opener-Policy Cross-Origin-Resource-Policy Cache-Control; do
     if grep -qi "^$h:" <<<"$hdr"; then echo "  ok       $h"; else echo "  MISSING  $h"; fi
   done
   echo "  Server header says: $(grep -i '^server:' <<<"$hdr" | cut -d' ' -f2-)   (want just nginx)"

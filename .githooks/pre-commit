@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Refuses commits that would publish a secret: files under secrets/, key files,
+# private keys, bare WireGuard keys and access tokens.
+# Turn it on once per clone:  git config core.hooksPath .githooks
+set -euo pipefail
+fail=0
+
+while IFS= read -r f; do
+  case $f in
+    secrets/*|*.key|*.pem|*.p12|.env|*/.env)
+      echo "pre-commit: refusing $f (secret file)"; fail=1 ;;
+  esac
+done < <(git diff --cached --name-only --diff-filter=ACMR)
+
+# Only the lines being added. Each pattern is written so this file never matches itself.
+wgkey='[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]='
+patterns=(
+  'PRIVATE[ ]KEY-----'                         "a private key block"
+  "PrivateKey *= *$wgkey"                      "a WireGuard private key"
+  "^\+ *$wgkey *\$"                            "a bare WireGuard key (wg genkey output)"
+  'ghp_[A-Za-z0-9]{36}'                        "a GitHub token"
+  'github_pat_[A-Za-z0-9_]{40,}'               "a GitHub fine grained token"
+  'AKIA[0-9A-Z]{16}'                           "an AWS key"
+)
+added=$(git diff --cached -U0 --no-color --diff-filter=ACMR | grep -E '^\+' | grep -vE '^\+\+\+ ' || true)
+for ((i = 0; i < ${#patterns[@]}; i += 2)); do
+  if grep -qE -- "${patterns[i]}" <<<"$added"; then
+    echo "pre-commit: refusing commit, it adds ${patterns[i+1]}"; fail=1
+  fi
+done
+
+if [ "$fail" -ne 0 ]; then
+  echo "Nothing was committed. Remove the secret (git restore --staged <file>) and try again."
+  exit 1
+fi

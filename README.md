@@ -49,6 +49,8 @@ Ring links are small /30 rooms named after the two cities they join: **10.0.XY.0
 
 Each port's description in the router config says which Packet Tracer port it replaces.
 
+One deliberate change from the Packet Tracer version: the site ports (eth1 to eth4) are **OSPF passive**. Their networks are still advertised, but the routers no longer send or accept OSPF hellos on the office LANs, so a device plugged into a site cannot become an OSPF neighbor and inject routes. Only the ring links (eth5, eth6) form adjacencies.
+
 The interfaces are set to 100 Mbit/s like FastEthernet, so every OSPF cost is 1 and the route table matches Packet Tracer number for number.
 
 ## Files
@@ -67,6 +69,7 @@ The interfaces are set to 100 Mbit/s like FastEthernet, so every OSPF cost is 1 
 | `publish.sh` | Installs the status page on the server |
 | `harden-web.sh` | Security settings for the status page, with a check from outside |
 | `remote-access.sh` | WireGuard remote access into the Milan router |
+| `.githooks/pre-commit` | Refuses commits containing keys, tokens or `secrets/`. Turn it on after cloning: `git config core.hooksPath .githooks` |
 
 ## Run it
 
@@ -118,7 +121,7 @@ The interface is created in the server's own network namespace, so its UDP socke
 ./remote-access.sh show                        # handshakes and traffic
 ```
 
-Private keys never leave their machine. Each PC makes its own key pair, the server's key stays in `secrets/` (ignored by Git, and a pre-commit hook refuses keys), and only public keys are exchanged. The PC's tunnel carries only lab addresses (10.0.0.0/13 and 10.9.0.0/24), so its normal internet traffic is untouched.
+Private keys never leave their machine. Each PC makes its own key pair, the server's key stays in `secrets/` (ignored by Git, and the pre-commit hook in `.githooks/` refuses keys and tokens), and only public keys are exchanged. The PC's tunnel carries only lab addresses (10.0.0.0/13 and 10.9.0.0/24), so its normal internet traffic is untouched.
 
 ## Status page
 
